@@ -8,13 +8,14 @@ from src.triangulator.triangulator import Triangulator
 
 @pytest.mark.parametrize("n_points", [100, 1000, 10000])
 def test_triangulation_perf_various_sizes(mocker, n_points):
-    """Test de performance : vérifie que la triangulation reste rapide pour différentes tailles de PointSet (100, 1000, 10 000 points)."""
+    """vérifie la rapidité pour différentes tailles de PointSet."""
     # Génère un nuage de n_points ( a peu pres aléatoire grace au %)
     points = [(i, i % 50) for i in range(n_points)]
 
     t = Triangulator()
 
-    mocker.patch.object(t, "triangulate", return_value=[(0, 1, 2)] * (n_points // 2)) # Pour limiter le nombre de triangles
+    # Pour limiter le nombre de triangles
+    mocker.patch.object(t, "triangulate", return_value=[(0, 1, 2)] * (n_points // 2))
 
     start = time.perf_counter()
 

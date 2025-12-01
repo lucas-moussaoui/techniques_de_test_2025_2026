@@ -1,10 +1,15 @@
+"""Application Flask pour la triangulation de points."""
+
 import uuid
+
 from flask import Flask, jsonify
+
 from .triangulator import Triangulator
 
 app = Flask(__name__)
 
 def is_valid_uuid(value: str) -> bool:
+    """Vérifie si une chaîne est un UUID valide."""
     try:
         uuid.UUID(value)
         return True
@@ -14,9 +19,7 @@ def is_valid_uuid(value: str) -> bool:
 # Création de la route http pour la triangulation
 @app.route("/triangulate/<pointset_id>", methods=["GET"])
 def triangulate_endpoint(pointset_id):
-    """
-    Endpoint principal de triangulation
-    """
+    """Endpoint principal de triangulation."""
     # Vérification simple, pointset_id doit être un UUID valide
     if not is_valid_uuid(pointset_id):
         return jsonify({"error": "Invalid ID"}), 400
