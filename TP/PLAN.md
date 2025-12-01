@@ -69,13 +69,24 @@ Ces tests utilisent un mock HTTP du PointSetManager pour simuler toutes les rép
 
 ## 2. Les tests de performance
 
-Mesure du temp de calcul pour la triangulation pour :
-- cas de 100 points
-- cas de 1000 points
-- cas de 10000 points
-- cas de 10000000000000000 points ( mais je ne garanti pas d'avoir un resultat a temps (O_O) )
+## 2. Les tests de performance
 
-Objectif : rester sous un seuil de temp
+Objectif : vérifier que les opérations principales restent rapides lorsque la taille des données augmente.
+
+Tests prévus :
+
+- Mesure du temps d’exécution de la triangulation (mockée) pour :
+    - 100 points
+    - 1 000 points
+    - 10 000 points
+
+- Vérification que le décodage d’un PointSet volumineux reste rapide.
+
+- Vérification que l’encodage des triangles reste rapide.
+
+- Mesure du temps d’exécution du pipeline complet `triangulate_from_id` (toutes les étapes mockées).
+
+Pour chaque test, le temps d’exécution doit rester sous un seuil fixé (≈ 0.1 seconde).
 
 ## 4. Les tests de qualité
 
