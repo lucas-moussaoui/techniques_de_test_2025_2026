@@ -5,21 +5,55 @@ __Composant testé__ : Triangulator
 
 __Composant simulé__ : PointSetManager ( Mock )
 
+## Objectifs de validation
+
+- la logique de triangulation fonctionne correctement
+- la logique d'encodage et décodage binaire fonctionne correctement (PointSet et Triangle)
+- le service HTTP répond correctement aux différentes situations (succès, erreurs client, erreurs serveur)
+- la séparation claire entre tests unitaires, tests d'API, tests de performance et tests de qualité
+
 ## 1. Les tests unitaires
 
-__Encodage / Décodage binaire__ :
+### Encodage / Décodage binaire
 
-- vérification des regle de la conversion entre points et binaire
-- cas testé n=1, n=5, tailles incohérente, non définies, immense, etc ..
+Objectif : vérifier que les formats binaires `PointSet` et `Triangles` respectent les règles définies.
 
-__Triangulation__:
+Cas testés :
+- Encodage d’un PointSet valide (n = 3).
+- Encodage d’un PointSet vide.
+- Décodage correct d’un PointSet.
+- Décodage d’un PointSet invalide.
+- Encodage de triangles (avec ou sans triangles).
+- Décodage correct des triangles.
+- Décodage de triangles invalides (erreur attendue).
 
-- cas basique de 3 points non colinéaire -> 1 triangle
-- cas de 4 points convexe -> 2 triangle qui partagent leur diagonales
-- cas de points uniquement colinéaires -> 0 triangle ou erreur
-- cas de 2 points -> erreur
-- cas de plusieurs points non colinéaire -> x triangles
-- cas de plusieurs point colinéaire et non colinéaire -> y triangles
+Ces tests couvrent :
+- données valides,
+- données vides,
+- données incohérentes,
+- erreurs de format.
+- 
+### Triangulation
+
+Objectif : valider la logique de triangulation sur différents ensembles de points.
+
+Cas testés :
+- 3 points non colinéaires → 1 triangle.
+- 4 points convexes → 2 triangles.
+- Points colinéaires → erreur.
+- Seulement 2 points → erreur.
+- Plusieurs points non colinéaires → ≥1 triangle.
+- Points colinéaires + points non colinéaires → triangles valides.
+- Aucun point → aucun triangle.
+
+### Méthode `triangulate_from_id`
+
+### Méthode `triangulate_from_id`
+
+Objectif : vérifier l’enchaînement des étapes internes (fetch → decode → triangulate → encode).
+
+Cas testé :
+- Succès complet : toutes les méthodes sont mockées et la valeur finale doit correspondre au retour d’`encode_triangles`.
 
 ## 2. Les tests d'API ( avec mock du PointSetManager )
 
