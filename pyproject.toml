@@ -14,3 +14,8 @@ omit = [
     "/tests/",
     "/venv/",
 ]
+
+[tool.pytest.ini_options]
+markers = [
+    "perf: Tests de performance (a exclure des tests unitaires)",
+]

@@ -5,6 +5,7 @@ import time
 import pytest
 from src.triangulator.triangulator import Triangulator
 
+pytestmark = pytest.mark.perf
 
 @pytest.mark.parametrize("n_points", [100, 1000, 10000])
 def test_triangulation_perf_various_sizes(mocker, n_points):
