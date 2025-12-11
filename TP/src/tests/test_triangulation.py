@@ -1,5 +1,6 @@
 """Tests unitaires pour le module de triangulation."""
 
+import struct
 import pytest
 from src.triangulator.triangulator import Triangulator
 
@@ -76,6 +77,21 @@ def test_encode_pointset():
     binary = t.encode_pointset(points)
     assert isinstance(binary, bytes)
 
+def test_encode_pointset_format_strict():
+    """Vérifie que le format binaire est EXACTEMENT celui de la spec."""
+    # 1 point à (1.0, 2.0)
+    points = [(1.0, 2.0)]
+    t = Triangulator()
+    binary = t.encode_pointset(points)
+    
+    # Construction manuelle de ce qu'on attend selon la spec:
+    # - 1 unsigned long (4 bytes) pour N=1 -> \x01\x00\x00\x00
+    # - 1 float (4 bytes) pour X=1.0      -> \x00\x00\x80\x3f (IEEE 754)
+    # - 1 float (4 bytes) pour Y=2.0      -> \x00\x00\x00\x40 (IEEE 754)
+    expected = struct.pack('<I', 1) + struct.pack('<f', 1.0) + struct.pack('<f', 2.0)
+    
+    assert binary == expected
+
 def test_encode_empty_pointset():
     """Test de l'encodage d'un PointSet vide."""
     points = []
@@ -144,7 +160,7 @@ def test_triangulate_from_id_success(mocker):
     mocker.patch.object(t, 'fetch_pointset', return_value=b'valid_binary')
     mocker.patch.object(t, 'decode_pointset', return_value=points)
     mocker.patch.object(t, 'triangulate', return_value=triangles)
-    mocker.patch.object(t, 'encode_triangles', return_value=[(0, 1, 2)])
+    mocker.patch.object(t, 'encode_triangles', return_value=b'binary_triangles_data')
 
     result = t.triangulate_from_id(pointset_id)
-    assert result == [(0, 1, 2)]
+    assert result == b'binary_triangles_data'

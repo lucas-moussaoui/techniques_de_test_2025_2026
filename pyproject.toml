@@ -8,3 +8,9 @@ select = [
     "SIM",
     "I",
 ]
+[tool.coverage.run]
+source = ["."]
+omit = [
+    "/tests/",
+    "/venv/",
+]

@@ -17,23 +17,42 @@ def is_valid_uuid(value: str) -> bool:
         return False
 
 # Création de la route http pour la triangulation
-@app.route("/triangulate/<pointset_id>", methods=["GET"])
+@app.route("/triangulation/<pointset_id>", methods=["GET"])
 def triangulate_endpoint(pointset_id):
     """Endpoint principal de triangulation."""
     # Vérification simple, pointset_id doit être un UUID valide
     if not is_valid_uuid(pointset_id):
-        return jsonify({"error": "Invalid ID"}), 400
+        return jsonify({
+            "code": "BAD_REQUEST", 
+            "message": "Invalid ID format"
+        }), 400
 
     t = Triangulator()
     try:
         result = t.triangulate_from_id(pointset_id)
-        return jsonify({"triangles": result}), 200
+        return Response(
+            result,
+            status=200,
+            mimetype='application/octet-stream'
+        )
 
     except FileNotFoundError:
-        return jsonify({"error": "PointSet not found"}), 404
+        return jsonify({
+            "code": "NOT_FOUND",
+            "message": "PointSet not found"
+        }), 404
 
     except ValueError as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({
+            "code": "TRIANGULATION_FAILED",
+            "message": str(e)
+        }), 500
 
     except Exception as e:
-        return jsonify({"error": f"Unexpected error: {e}"}), 503
+        return jsonify({
+            "code": "SERVICE_UNAVAILABLE",
+            "message": f"Unexpected error: {e}"
+        }), 503
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)

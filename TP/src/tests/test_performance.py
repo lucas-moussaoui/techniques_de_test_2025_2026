@@ -14,12 +14,9 @@ def test_triangulation_perf_various_sizes(mocker, n_points):
 
     t = Triangulator()
 
-    # Pour limiter le nombre de triangles
-    mocker.patch.object(t, "triangulate", return_value=[(0, 1, 2)] * (n_points // 2))
-
     start = time.perf_counter()
 
-    t.triangulate(points)   # → appel mocké, donc immédiat
+    t.triangulate(points)
 
     duration = time.perf_counter() - start
 
@@ -28,19 +25,19 @@ def test_triangulation_perf_various_sizes(mocker, n_points):
 
 def test_decode_pointset_performance(mocker):
     """Test de performance : le décodage d'un PointSet binaire doit rester rapide."""
-    # Simule un PointSet binaire très large
-    fake_binary = b"\x00\x00\x27\x10" + b"\x00\x00\x00\x00" * (10000 * 2)
-    # 0x2710 = 10000 points
-
     t = Triangulator()
 
-    # Mock de decode pour éviter une vraie implémentation complexe
-    mocker.patch.object(t, "decode_pointset", return_value=[(0, 0)] * 10000)
+    n_points = 10000
+    # Header : N (unsigned long)
+    binary_data = struct.pack('<I', n_points)
+    # Body : N points (float, float)
+    # On génère un gros bloc de bytes directement
+    point_data = struct.pack('<ff', 1.0, 2.0) * n_points
+    full_data = binary_data + point_data
 
-    import time
     start = time.perf_counter()
 
-    t.decode_pointset(fake_binary)
+    t.decode_pointset(full_data)
 
     duration = time.perf_counter() - start
 
@@ -68,12 +65,11 @@ def test_full_pipeline_performance(mocker):
     """Test de performance : l'appel complet triangulate_from_id doit être rapide."""
     t = Triangulator()
 
-    mocker.patch.object(t, "fetch_pointset", return_value=b"bin")
-    mocker.patch.object(t, "decode_pointset", return_value=[(0, 0), (1, 0), (0, 1)])
-    mocker.patch.object(t, "triangulate", return_value=[(0, 1, 2)])
-    mocker.patch.object(t, "encode_triangles", return_value=b"triangles")
+    n_points = 1000
+    fake_input_binary = struct.pack('<I', n_points) + (struct.pack('<ff', 0.0, 0.0) * n_points)
+    
+    mocker.patch.object(t, "fetch_pointset", return_value=fake_input_binary)
 
-    import time
     start = time.perf_counter()
 
     t.triangulate_from_id("123e4567-e89b-12d3-a456-426614174000")

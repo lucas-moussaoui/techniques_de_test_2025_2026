@@ -1,48 +1,49 @@
-# =========================
-#        MAKEFILE
-# =========================
+# Makefile pour le projet Triangulator
 
-# Commandes
-PYTHON = python
+# Variables pour garantir l'utilisation des bons exécutables
+PYTHON := python
 PYTEST = $(PYTHON) -m pytest
+COVERAGE = $(PYTHON) -m coverage
+RUFF = $(PYTHON) -m ruff
+PDOC = $(PYTHON) -m pdoc
 
-# =========================
-#         TESTS
-# =========================
+# Ajout du répertoire courant au PYTHONPATH pour que 'src' soit trouvé
+export PYTHONPATH := .
 
+.PHONY: test unit_test perf_test coverage lint doc clean
+
+# 1. Lance tous les tests
 test:
-	$(PYTEST)
+	$(PYTEST) -v
 
+# 2. Lance tous les tests sauf ceux de performance (marqués 'perf')
 unit_test:
-	$(PYTEST) src/tests/test_triangulation.py
+	$(PYTEST) -v -m "not perf"
 
-api_test:
-	$(PYTEST) src/tests/test_api.py
-
+# 3. Lance uniquement les tests de performance
 perf_test:
-	$(PYTEST) src/tests/test_performance.py
+	$(PYTEST) -v -m "perf"
 
-# =========================
-#        QUALITÉ CODE
-# =========================
-
-lint:
-	$(PYTHON) -m ruff check src
-
-lint_fix:
-	$(PYTHON) -m ruff check src --fix
-
-# =========================
-#        COUVERTURE
-# =========================
-
+# 4. Génère un rapport de couverture de code
 coverage:
-	$(PYTHON) -m coverage run -m pytest
-	$(PYTHON) -m coverage html
-	@echo "Ouvre htmlcov/index.html"
+	$(COVERAGE) run -m pytest
+	$(COVERAGE) report -m
+	@echo "Rapport HTML généré dans htmlcov/"
+	$(COVERAGE) html
 
-# =========================
-#         DOC
-# =========================
+# 5. Valide la qualité du code avec ruff
+lint:
+	$(RUFF) check .
 
-# Todo: Ajouter des commandes pour générer la documentation
+# 6. Génère la documentation en HTML
+doc:
+	$(PDOC) --html --output-dir docs --force src/triangulator
+	@echo "Documentation générée dans docs/"
+
+# Nettoyage des fichiers temporaires (optionnel mais pratique)
+clean:
+	rm -rf .pytest_cache
+	rm -rf __pycache__
+	rm -rf htmlcov
+	rm -rf docs
+	rm -f .coverage
