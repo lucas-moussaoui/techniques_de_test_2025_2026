@@ -25,10 +25,31 @@ class Triangulator:
             binary_pointSet += struct.pack('<ff', float(x), float(y))
             
         return binary_pointSet
-    
+
     def fetch_pointset(self, pointset_id: str) -> bytes:
         """Récupère le PointSet binaire depuis le PointSetManager."""
-        raise NotImplementedError("Fetching non implémenté")
+        # 1. On construit l'URL (ex: /pointset/123-abc...)
+        url = f"http://localhost:8080/pointset/{pointset_id}"
+        
+        try:
+            # 2. On ouvre la connexion
+            with urllib.request.urlopen(url) as response:
+                # 3. Si ça marche (code 200), on lit tout le contenu binaire
+                return response.read() # Ceci retourne des 'bytes'
+
+        except urllib.error.HTTPError as e:
+            # Le serveur a répondu, mais avec une erreur (404, 500...)
+            if e.code == 404:
+                raise FileNotFoundError(f"PointSet {pointset_id} introuvable")
+            elif e.code == 503:
+                raise ConnectionError("PointSetManager en maintenance")
+            else:
+                raise ValueError(f"Erreur HTTP {e.code}: {e.reason}")
+                
+        except urllib.error.URLError as e:
+            # Le serveur n'est même pas accessible (éteint, pas de wifi...)
+            # Ton app.py attrapera cette exception générique et renverra une 503.
+            raise ConnectionError(f"Impossible de joindre le PSM: {e.reason}")
 
     def decode_pointset(self, binary: bytes):
         """Décode le PointSet au format binaire → liste de points."""
