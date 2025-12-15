@@ -16,6 +16,42 @@ def test_fetch_pointset_success(mocker):
 
 ### Tests de triangulation ###
 
+def test_circumcircle_inside():
+    """Vérifie qu'un point clairement à l'intérieur est détecté."""
+    t = Triangulator()
+    # Triangle rectangle (0,0) -> (4,0) -> (0,4)
+    points = [(0, 0), (4, 0), (0, 4)]
+    triangle_indices = (0, 1, 2)
+    
+    # Point à tester (1, 1) est bien dedans
+    p_inside = (1, 1)
+    
+    assert t.is_in_circumcircle(p_inside, triangle_indices, points) is True
+
+def test_circumcircle_outside():
+    """Vérifie qu'un point à l'extérieur est rejeté."""
+    t = Triangulator()
+    points = [(0, 0), (4, 0), (0, 4)]
+    triangle_indices = (0, 1, 2)
+    
+    # Point à tester (5, 5) est dehors
+    p_outside = (5, 5)
+    
+    assert t.is_in_circumcircle(p_outside, triangle_indices, points) is False
+
+def test_circumcircle_cocyclic():
+    """Vérifie le comportement pour un point sur le bord du cercle."""
+    t = Triangulator()
+    # Triangle inscrit dans le cercle de rayon 1
+    points = [(-1, 0), (1, 0), (0, 1)] 
+    triangle_indices = (0, 1, 2)
+    
+    # Le point (0, -1) est aussi sur ce cercle
+    p_on_circle = (0, -1)
+    
+    # Doit renvoyer False car pas STRICTEMENT à l'intérieur
+    assert t.is_in_circumcircle(p_on_circle, triangle_indices, points) is False
+
 def test_trois_points_creer_un_triangle():
     """Cas basique : 3 points non colinéaires -> 1 triangle."""
     points = [(0, 0), (1, 0), (0, 1)]
