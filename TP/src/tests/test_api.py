@@ -17,7 +17,7 @@ def test_valid_request_returns_200(client, mocker):
     # la méthode triangulate_from_id par les valeur la fausse reponse binaire
     fake_binary_response = b'\x00\x00\x00\x01...'
     mocker.patch("src.triangulator.triangulator.Triangulator.triangulate_from_id",
-                 fake_binary_response)
+                 return_value=fake_binary_response)
     valid_uuid = "123e4567-e89b-12d3-a456-426614174000"
 
     response = client.get(f"/triangulation/{valid_uuid}")

@@ -1,5 +1,6 @@
 """Module de triangulation."""
 import struct
+import math
 
 class Triangulator:
     """Classe responsable de la triangulation d'un ensemble de points."""
@@ -82,9 +83,187 @@ class Triangulator:
 
         return points
 
+    def is_in_circumcircle(self, point, triangle, points):
+        """Vérifie si un point est dans le cercle circonscrit d'un triangle."""
+        # 1. On récupère les 3 sommets du triangle
+        a = points[triangle[0]]
+        b = points[triangle[1]]
+        c = points[triangle[2]]
+
+        # 2. On simplifie en ramenant 'p' à l'origine (0,0)
+        ax, ay = a[0] - point[0], a[1] - point[1]
+        bx, by = b[0] - point[0], b[1] - point[1]
+        cx, cy = c[0] - point[0], c[1] - point[1]
+
+        # 3. On calcule le déterminant
+        det = ( (ax*ax + ay*ay) * (bx*cy - cx*by) -
+                (bx*bx + by*by) * (ax*cy - cx*ay) +
+                (cx*cx + cy*cy) * (ax*by - bx*ay) )
+                
+        # 4. On retourne True si le déterminant est positif
+        return det > 0
+
+    def is_in_circumcircle(self, point, triangle, points):
+        """
+        Vérifie si 'point' se trouve à l'intérieur du cercle circonscrit au 'triangle'.
+        Retourne True si le point est dedans (donc le triangle est invalide).
+        """
+        # On récupère les coordonnées réelles des 3 sommets du triangle grâce à leurs indices
+        p1 = points[triangle[0]]
+        p2 = points[triangle[1]]
+        p3 = points[triangle[2]]
+
+        # On déplace le repère pour que le point à tester soit à l'origine (0,0)
+        # Cela simplifie grandement les calculs mathématiques
+        ax, ay = p1[0] - point[0], p1[1] - point[1]
+        bx, by = p2[0] - point[0], p2[1] - point[1]
+        cx, cy = p3[0] - point[0], p3[1] - point[1]
+
+        # On calcule le déterminant de la matrice 3x3
+        # La formule inclut les termes quadratiques (x² + y²) propres à l'équation du cercle
+        det = ((ax*ax + ay*ay) * (bx*cy - cx*by) -
+               (bx*bx + by*by) * (ax*cy - cx*ay) +
+               (cx*cx + cy*cy) * (ax*by - bx*ay))
+
+        # Si le déterminant est positif, le point est dans le cercle.
+        # On utilise 1e-9 pour éviter les erreurs d'arrondi (epsilon).
+        return det > 1e-9
+
     def triangulate(self, points):
-        """Retourne une liste de triangles formés à partir d'une liste de points."""
-        raise NotImplementedError("Triangulation non implémentée")
+        """
+        Implémentation de Bowyer-Watson.
+        Transforme un nuage de points en une liste de triangles (indices).
+        """
+        # ETAPE 1 : VERIFICATIONS DE BASE
+        
+        # Si la liste est vide, on ne peut rien faire
+        if not points:
+            return []
+        
+        # On récupère le nombre de points
+        n_points = len(points)
+        
+        # Il faut au moins 3 points pour faire un triangle
+        if n_points < 3:
+            raise ValueError("Impossible de trianguler moins de 3 points")
+
+        # ETAPE 2 : ANALYSE DES DONNEES (BOUNDING BOX)
+
+        # On extrait toutes les coordonnées X et Y pour trouver les limites
+        x = [p[0] for p in points]
+        y = [p[1] for p in points]
+        min_x, max_x = min(x), max(x)
+        min_y, max_y = min(y), max(y)
+
+        # Vérification de la colinéarité
+        if math.isclose(min_x, max_x) or math.isclose(min_y, max_y):
+             raise ValueError("Points colinéaires ou confondus")
+
+        # ETAPE 3 : CREATION DU SUPER-TRIANGLE
+
+        # On calcule les dimensions de la zone
+        dx = max_x - min_x
+        dy = max_y - min_y
+        # On prend la plus grande dimension pour faire un triangle assez grand
+        delta_max = max(dx, dy) if max(dx, dy) > 0 else 1.0
+        
+        # On calcule le centre du nuage de points
+        mid_x = (min_x + max_x) / 2
+        mid_y = (min_y + max_y) / 2
+
+        # On crée 3 points virtuels géants qui englobent tout le nuage
+        # La multiplication par 20 permet d'être sur qu'il englobe tout le nuage
+        p1 = (mid_x - 20 * delta_max, mid_y - delta_max)
+        p2 = (mid_x, mid_y + 20 * delta_max)
+        p3 = (mid_x + 20 * delta_max, mid_y - delta_max)
+
+        # On crée une liste de travail qui contient les vrais points + les 3 points virtuels
+        working_points = points + [p1, p2, p3]
+        
+        # Les indices des points du Super-Triangle sont à la fin de la liste
+        st1 = n_points
+        st2 = n_points + 1
+        st3 = n_points + 2
+
+        # On initialise la liste des triangles avec ce Super-Triangle unique
+        triangles = [(st1, st3, st2)]
+
+        # ETAPE 4 : LA BOUCLE PRINCIPALE (INCREMENTALE)
+
+        # On insère chaque point un par un dans la triangulation existante
+        for i, point in enumerate(points):
+            
+            # Liste des triangles qui ne respectent plus la condition de Delaunay (à supprimer)
+            bad_triangles = []
+            
+            # Liste temporaire pour garder les bons triangles
+            temp_triangles = []
+
+            # Identification des mauvais triangles
+            for tri in triangles:
+                # Si le nouveau point est dans le cercle circonscrit de ce triangle
+                if self.is_in_circumcircle(point, tri, working_points):
+                    # alors ce triangle est a enlever
+                    bad_triangles.append(tri)
+                else:
+                    # sinon, on le garde pour la prochaine étape
+                    temp_triangles.append(tri)
+            
+            # On met à jour la liste principale en ne gardant que les bons
+            triangles = temp_triangles
+
+            # Calcul du Polygone de Bowyer-Watson ( un gros trou )
+            # Le but est de trouver le contour extérieur du trou formé par les bad_triangles.
+            # On doit trouver une arête interne est partagée par 2 bad_triangles.
+            # Une arête frontière n'appartient qu'à 1 seul bad_triangle.
+            boundary_edges = set()
+            
+            for tri in bad_triangles:
+                # On liste les 3 arêtes du triangle : (A,B), (B,C), (C,A)
+                edges = [(tri[0], tri[1]), (tri[1], tri[2]), (tri[2], tri[0])]
+                
+                for edge in edges:
+                    # On calcule l'arête inverse (B,A)
+                    reversed_edge = (edge[1], edge[0])
+                    
+                    # Si l'inverse est déjà dans le set, c'est que l'arête est partagée !
+                    if reversed_edge in boundary_edges:
+                        # Donc c'est une arête interne, on la supprime (elles s'annulent)
+                        boundary_edges.remove(reversed_edge)
+                    else:
+                        # Sinon, c'est potentiellement une frontière, on l'ajoute
+                        boundary_edges.add(edge)
+
+            # Re-bouchage du trou
+            # Pour chaque arête du contour, on crée un nouveau triangle avec le point 'i'
+            for edge in boundary_edges:
+                # On forme le triangle (Point1, Point2, NouveauPoint)
+                new_tri = (edge[0], edge[1], i)
+                # On l'ajoute à la liste principale
+                triangles.append(new_tri)
+
+        # Nettoyage final
+        
+        final_triangles = []
+        
+        # On parcourt tous les triangles créés
+        for tri in triangles:
+            # Si un des sommets a un indice >= n_points, c'est un sommet du Super-Triangle
+            if tri[0] >= n_points or tri[1] >= n_points or tri[2] >= n_points:
+                # On ne garde pas ce triangle car il est connecté à rien
+                continue
+            
+            # Sinon, c'est un triangle valide
+            final_triangles.append(tri)
+
+        # sécurité finale
+        
+        # cas d'une ligne droite
+        if not final_triangles and n_points >= 3:
+             raise ValueError("Erreur triangulation (Ce sont potentiellement des points colinéaires)")
+
+        # On retourne la liste finale
+        return final_triangles
 
     def encode_triangles(self, points, triangles) -> bytes:
         """Encode la réponse Triangles au format binaire."""
