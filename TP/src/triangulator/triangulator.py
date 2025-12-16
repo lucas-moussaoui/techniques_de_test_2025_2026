@@ -103,32 +103,6 @@ class Triangulator:
         # 4. On retourne True si le déterminant est positif
         return det > 0
 
-    def is_in_circumcircle(self, point, triangle, points):
-        """
-        Vérifie si 'point' se trouve à l'intérieur du cercle circonscrit au 'triangle'.
-        Retourne True si le point est dedans (donc le triangle est invalide).
-        """
-        # On récupère les coordonnées réelles des 3 sommets du triangle grâce à leurs indices
-        p1 = points[triangle[0]]
-        p2 = points[triangle[1]]
-        p3 = points[triangle[2]]
-
-        # On déplace le repère pour que le point à tester soit à l'origine (0,0)
-        # Cela simplifie grandement les calculs mathématiques
-        ax, ay = p1[0] - point[0], p1[1] - point[1]
-        bx, by = p2[0] - point[0], p2[1] - point[1]
-        cx, cy = p3[0] - point[0], p3[1] - point[1]
-
-        # On calcule le déterminant de la matrice 3x3
-        # La formule inclut les termes quadratiques (x² + y²) propres à l'équation du cercle
-        det = ((ax*ax + ay*ay) * (bx*cy - cx*by) -
-               (bx*bx + by*by) * (ax*cy - cx*ay) +
-               (cx*cx + cy*cy) * (ax*by - bx*ay))
-
-        # Si le déterminant est positif, le point est dans le cercle.
-        # On utilise 1e-9 pour éviter les erreurs d'arrondi (epsilon).
-        return det > 1e-9
-
     def triangulate(self, points):
         """
         Implémentation de Bowyer-Watson.
