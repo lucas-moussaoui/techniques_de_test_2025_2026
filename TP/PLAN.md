@@ -32,7 +32,7 @@ Ces tests couvrent :
 - données vides,
 - données incohérentes,
 - erreurs de format.
-- 
+
 ### Triangulation
 
 Objectif : valider la logique de triangulation sur différents ensembles de points.
@@ -45,6 +45,13 @@ Cas testés :
 - Plusieurs points non colinéaires → ≥1 triangle.
 - Points colinéaires + points non colinéaires → triangles valides.
 - Aucun point → aucun triangle.
+
+Objectif : valider mathématiquement la fonction de détection (cercle circonscrit).
+
+Cas testés :
+- Point strictement à l'intérieur → True
+- Point strictement à l'extérieur → False
+- Point cocyclique (exactement sur le cercle) → False
 
 ### Méthode `triangulate_from_id`
 
@@ -65,7 +72,7 @@ Cas testé :
 
 Ces tests utilisent un mock HTTP du PointSetManager pour simuler toutes les réponses possibles.
 
-## 2. Les tests de performance
+## 3. Les tests de performance
 
 Objectif : vérifier que les opérations principales restent rapides lorsque la taille des données augmente.
 
