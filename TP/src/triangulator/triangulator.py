@@ -1,6 +1,9 @@
 """Module de triangulation."""
-import struct
 import math
+import struct
+import urllib.error
+import urllib.request
+
 
 class Triangulator:
     """Classe responsable de la triangulation d'un ensemble de points."""
@@ -14,7 +17,8 @@ class Triangulator:
         # < signifie little-endian (le moins significatif est stocké en premier)
         # > signifie big-endian (le plus significatif est stocké en premier)
         
-        # Le but ici est d'écrire le header ( qui est censer représenter le nombre de points)
+        # Le but ici est d'écrire le header 
+        # ( qui est censer représenter le nombre de points)
         # struct.pack('<I', N) va créer 4 octets représentant cet espace et y ajouter N
         binary_pointSet = struct.pack('<I', N)
         
@@ -22,7 +26,8 @@ class Triangulator:
         for point in points:
             # On s'assure que ce sont des floats (x, y)
             x, y = point
-            # struct.pack('<ff', float(x), float(y)) va créer 8 octets représentant cet espace et y ajouter x et y
+            # struct.pack('<ff', float(x), float(y)) 
+            # va créer 8 octets représentant cet espace et y ajouter x et y
             binary_pointSet += struct.pack('<ff', float(x), float(y))
             
         return binary_pointSet
@@ -41,16 +46,16 @@ class Triangulator:
         except urllib.error.HTTPError as e:
             # Le serveur a répondu, mais avec une erreur (404, 500...)
             if e.code == 404:
-                raise FileNotFoundError(f"PointSet {pointset_id} introuvable")
+                raise FileNotFoundError(f"PointSet {pointset_id} introuvable") from e
             elif e.code == 503:
-                raise ConnectionError("PointSetManager en maintenance")
+                raise ConnectionError("PointSetManager en maintenance") from e
             else:
-                raise ValueError(f"Erreur HTTP {e.code}: {e.reason}")
+                raise ValueError(f"Erreur HTTP {e.code}: {e.reason}") from e
                 
         except urllib.error.URLError as e:
             # Le serveur n'est même pas accessible (éteint, pas de wifi...)
             # Ton app.py attrapera cette exception générique et renverra une 503.
-            raise ConnectionError(f"Impossible de joindre le PSM: {e.reason}")
+            raise ConnectionError(f"Impossible de joindre le PSM: {e.reason}") from e
 
     def decode_pointset(self, binary: bytes):
         """Décode le PointSet au format binaire → liste de points."""
@@ -61,14 +66,16 @@ class Triangulator:
         # Ici on va lire N
         try:
             N = struct.unpack('<I', binary[:4])[0]
-        except struct.error:
-            raise ValueError("Impossible de lire le nombre de points")
+        except struct.error as e:
+            raise ValueError("Impossible de lire le nombre de points") from e
 
         # Vérification de la cohérence de la taille totale
         # 4 bytes (header) + N * 8 bytes (corps : 2 floats de 4 bytes par point)
         expected_size = 4 + (N * 8)
         if len(binary) < expected_size:
-            raise ValueError(f"Taille incorrecte : attendu {expected_size}, reçu {len(binary)}")
+            raise ValueError(
+                f"Taille incorrecte : attendu {expected_size}, reçu {len(binary)}"
+            )
 
         points = []
         position = 4
@@ -104,10 +111,7 @@ class Triangulator:
         return det > 0
 
     def triangulate(self, points):
-        """
-        Implémentation de Bowyer-Watson.
-        Transforme un nuage de points en une liste de triangles (indices).
-        """
+        """Triangulation d'un nuage de points en triangles (Bowyer-Watson)."""
         # ETAPE 1 : VERIFICATIONS DE BASE
         
         # Si la liste est vide, on ne peut rien faire
@@ -151,7 +155,8 @@ class Triangulator:
         p2 = (mid_x, mid_y + 20 * delta_max)
         p3 = (mid_x + 20 * delta_max, mid_y - delta_max)
 
-        # On crée une liste de travail qui contient les vrais points + les 3 points virtuels
+        # On crée une liste de travail qui contient
+        # les vrais points + les 3 points virtuels
         working_points = points + [p1, p2, p3]
         
         # Les indices des points du Super-Triangle sont à la fin de la liste
@@ -167,7 +172,8 @@ class Triangulator:
         # On insère chaque point un par un dans la triangulation existante
         for i, point in enumerate(points):
             
-            # Liste des triangles qui ne respectent plus la condition de Delaunay (à supprimer)
+            # Liste des triangles qui ne respectent
+            # plus la condition de Delaunay (à supprimer)
             bad_triangles = []
             
             # Liste temporaire pour garder les bons triangles
@@ -187,7 +193,8 @@ class Triangulator:
             triangles = temp_triangles
 
             # Calcul du Polygone de Bowyer-Watson ( un gros trou )
-            # Le but est de trouver le contour extérieur du trou formé par les bad_triangles.
+            # Le but est de trouver le contour extérieur du trou
+            # formé par les bad_triangles.
             # On doit trouver une arête interne est partagée par 2 bad_triangles.
             # Une arête frontière n'appartient qu'à 1 seul bad_triangle.
             boundary_edges = set()
@@ -200,16 +207,18 @@ class Triangulator:
                     # On calcule l'arête inverse (B,A)
                     reversed_edge = (edge[1], edge[0])
                     
-                    # Si l'inverse est déjà dans le set, c'est que l'arête est partagée !
+                    # Si l'inverse est déjà dans le set, c'est que l'arête est partagée
                     if reversed_edge in boundary_edges:
-                        # Donc c'est une arête interne, on la supprime (elles s'annulent)
+                        # Donc c'est une arête interne, on la supprime
+                        # (elles s'annulent)
                         boundary_edges.remove(reversed_edge)
                     else:
                         # Sinon, c'est potentiellement une frontière, on l'ajoute
                         boundary_edges.add(edge)
 
             # Re-bouchage du trou
-            # Pour chaque arête du contour, on crée un nouveau triangle avec le point 'i'
+            # Pour chaque arête du contour,
+            # on crée un nouveau triangle avec le point 'i'
             for edge in boundary_edges:
                 # On forme le triangle (Point1, Point2, NouveauPoint)
                 new_tri = (edge[0], edge[1], i)
@@ -222,7 +231,7 @@ class Triangulator:
         
         # On parcourt tous les triangles créés
         for tri in triangles:
-            # Si un des sommets a un indice >= n_points, c'est un sommet du Super-Triangle
+            # Si indice sommets >= n_points, c'est un sommet du Super-Triangle
             if tri[0] >= n_points or tri[1] >= n_points or tri[2] >= n_points:
                 # On ne garde pas ce triangle car il est connecté à rien
                 continue
@@ -234,7 +243,7 @@ class Triangulator:
         
         # cas d'une ligne droite
         if not final_triangles and n_points >= 3:
-             raise ValueError("Erreur triangulation (Ce sont potentiellement des points colinéaires)")
+             raise ValueError("Erreur triangulation (potentiellement colinéaires)")
 
         # On retourne la liste finale
         return final_triangles

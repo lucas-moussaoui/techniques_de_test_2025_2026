@@ -1,6 +1,7 @@
 """Tests unitaires pour le module de triangulation."""
 
 import struct
+
 import pytest
 from src.triangulator.triangulator import Triangulator
 

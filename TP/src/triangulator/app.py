@@ -2,7 +2,7 @@
 
 import uuid
 
-from flask import Flask, jsonify, Response
+from flask import Flask, Response, jsonify
 
 from .triangulator import Triangulator
 
