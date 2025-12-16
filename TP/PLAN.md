@@ -48,8 +48,6 @@ Cas testés :
 
 ### Méthode `triangulate_from_id`
 
-### Méthode `triangulate_from_id`
-
 Objectif : vérifier l’enchaînement des étapes internes (fetch → decode → triangulate → encode).
 
 Cas testé :
@@ -69,8 +67,6 @@ Ces tests utilisent un mock HTTP du PointSetManager pour simuler toutes les rép
 
 ## 2. Les tests de performance
 
-## 2. Les tests de performance
-
 Objectif : vérifier que les opérations principales restent rapides lorsque la taille des données augmente.
 
 Tests prévus :
@@ -78,7 +74,7 @@ Tests prévus :
 - Mesure du temps d’exécution de la triangulation (mockée) pour :
     - 100 points
     - 1 000 points
-    - 10 000 points
+    - 2 000 points
 
 - Vérification que le décodage d’un PointSet volumineux reste rapide.
 
@@ -86,7 +82,7 @@ Tests prévus :
 
 - Mesure du temps d’exécution du pipeline complet `triangulate_from_id` (toutes les étapes mockées).
 
-Pour chaque test, le temps d’exécution doit rester sous un seuil fixé (≈ 0.1 seconde).
+Pour chaque test, le temps d’exécution doit rester sous un seuil fixé.
 
 ## 4. Les tests de qualité
 
