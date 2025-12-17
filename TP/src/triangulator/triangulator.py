@@ -64,19 +64,7 @@ class Triangulator:
             raise ValueError("Données binaires invalides ou incomplètes")
 
         # Ici on va lire N
-        try:
-            N = struct.unpack('<I', binary[:4])[0]
-        except struct.error as e:
-            raise ValueError("Impossible de lire le nombre de points") from e
-
-        # Vérification de la cohérence de la taille totale
-        # 4 bytes (header) + N * 8 bytes (corps : 2 floats de 4 bytes par point)
-        expected_size = 4 + (N * 8)
-        if len(binary) < expected_size:
-            raise ValueError(
-                f"Taille incorrecte : attendu {expected_size}, reçu {len(binary)}"
-            )
-
+        N = struct.unpack('<I', binary[:4])[0]
         points = []
         position = 4
         
@@ -132,10 +120,6 @@ class Triangulator:
         y = [p[1] for p in points]
         min_x, max_x = min(x), max(x)
         min_y, max_y = min(y), max(y)
-
-        # Vérification de la colinéarité
-        if math.isclose(min_x, max_x) or math.isclose(min_y, max_y):
-             raise ValueError("Points colinéaires ou confondus")
 
         # ETAPE 3 : CREATION DU SUPER-TRIANGLE
 
@@ -277,19 +261,12 @@ class Triangulator:
         N = len(points)
         position = 4 + (N * 8)
         
-        # Vérification qu'on a bien la suite (au moins le nombre T)
-        if len(binary) < position + 4:
-             raise ValueError("Données binaires incomplètes pour les triangles")
-             
         # Lecture du nombre de triangles T
         T = struct.unpack('<I', binary[position : position + 4])[0]
         position += 4
         
         triangles = []
         for _ in range(T):
-            if len(binary) < position + 12:
-                raise ValueError("Données corrompues dans les triangles")
-                
             # Lecture du triplet d'indices (3 * 4 bytes)
             chunk = binary[position : position + 12]
             i1, i2, i3 = struct.unpack('<III', chunk)

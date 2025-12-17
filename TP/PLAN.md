@@ -33,6 +33,25 @@ Ces tests couvrent :
 - données incohérentes,
 - erreurs de format.
 
+### Récupération de données (Mock Réseau)
+
+Objectif : vérifier la robustesse de la récupération des données auprès du PointSetManager.
+
+Cas testés :
+- Lecture réussie des données binaires (utilisation de `MagicMock` pour simuler le contexte de `urlopen`).
+- Gestion d'une erreur 404 (ID inconnu) -> levée d'une `FileNotFoundError`.
+- Gestion d'une erreur 503 (Service en maintenance) -> levée d'une `ConnectionError`.
+- Gestion d'un échec de connexion (Serveur inaccessible) -> levée d'une `ConnectionError`.
+
+### Prédicats Géométriques
+
+Objectif : valider mathématiquement la fonction de détection du cercle circonscrit.
+
+Cas testés :
+- Point strictement à l'intérieur du cercle circonscrit → `True`.
+- Point strictement à l'extérieur → `False`.
+- Point cocyclique (exactement sur le bord du cercle) → `False` (critère de Delaunay strict).
+
 ### Triangulation
 
 Objectif : valider la logique de triangulation sur différents ensembles de points.
@@ -45,13 +64,6 @@ Cas testés :
 - Plusieurs points non colinéaires → ≥1 triangle.
 - Points colinéaires + points non colinéaires → triangles valides.
 - Aucun point → aucun triangle.
-
-Objectif : valider mathématiquement la fonction de détection (cercle circonscrit).
-
-Cas testés :
-- Point strictement à l'intérieur → True
-- Point strictement à l'extérieur → False
-- Point cocyclique (exactement sur le cercle) → False
 
 ### Méthode `triangulate_from_id`
 

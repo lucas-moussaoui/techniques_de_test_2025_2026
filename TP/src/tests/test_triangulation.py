@@ -1,7 +1,8 @@
 """Tests unitaires pour le module de triangulation."""
 
 import struct
-
+import urllib.error
+from io import BytesIO
 import pytest
 from src.triangulator.triangulator import Triangulator
 
@@ -14,6 +15,68 @@ def test_fetch_pointset_success(mocker):
     mocker.patch.object(t, 'fetch_pointset', return_value=expected_binary)
     result = t.fetch_pointset("valid_id")
     assert result == expected_binary
+
+def test_fetch_pointset_404(mocker):
+    """Teste la levée de FileNotFoundError lors d'une 404."""
+    t = Triangulator()
+    # On simule une erreur HTTP 404
+    error_404 = urllib.error.HTTPError("url", 404, "Not Found", {}, BytesIO(b""))
+    mocker.patch("urllib.request.urlopen", side_effect=error_404)
+
+    with pytest.raises(FileNotFoundError, match="introuvable"):
+        t.fetch_pointset("unknown_id")
+
+def test_fetch_pointset_503(mocker):
+    """Teste la levée de ConnectionError lors d'une 503."""
+    t = Triangulator()
+    # On simule une erreur HTTP 503
+    error_503 = urllib.error.HTTPError("url", 503, "Service Unavailable", {}, BytesIO(b""))
+    mocker.patch("urllib.request.urlopen", side_effect=error_503)
+
+    with pytest.raises(ConnectionError, match="maintenance"):
+        t.fetch_pointset("any_id")
+
+def test_fetch_pointset_other_http_error(mocker):
+    """Teste la levée de ValueError pour d'autres codes HTTP (ex: 500)."""
+    t = Triangulator()
+    error_500 = urllib.error.HTTPError("url", 500, "Internal Server Error", {}, BytesIO(b""))
+    mocker.patch("urllib.request.urlopen", side_effect=error_500)
+
+    with pytest.raises(ValueError, match="Erreur HTTP 500"):
+        t.fetch_pointset("any_id")
+
+def test_fetch_pointset_url_error(mocker):
+    """Teste la levée de ConnectionError quand le serveur est inaccessible."""
+    t = Triangulator()
+    # On simule un échec de connexion (serveur éteint)
+    mocker.patch("urllib.request.urlopen", side_effect=urllib.error.URLError("Connection refused"))
+
+    with pytest.raises(ConnectionError, match="Impossible de joindre le PSM"):
+        t.fetch_pointset("any_id")
+
+def test_fetch_pointset_read_coverage(mocker):
+    """Teste le succès de lecture de fetch_pointset pour le coverage."""
+    t = Triangulator()
+    fake_data = b"\x00\x00\x00\x01\x00\x00\x80\x3f\x00\x00\x00\x40"
+
+    # 1. On crée le MagicMock
+    mock_response = mocker.MagicMock()
+    
+    # 2. IMPORTANT : On dit au mock que lorsqu'on entre dans le "with", 
+    # il doit se retourner lui-même pour que 'as response' soit égal au mock.
+    mock_response.__enter__.return_value = mock_response
+    
+    # 3. On définit ce que read() doit renvoyer
+    mock_response.read.return_value = fake_data
+
+    # 4. On patch l'ouverture de l'URL
+    mocker.patch("urllib.request.urlopen", return_value=mock_response)
+
+    result = t.fetch_pointset("123e4567-e89b-12d3-a456-426614174000")
+
+    # result sera bien égal à fake_data
+    assert result == fake_data
+    mock_response.read.assert_called_once()
 
 ### Tests de triangulation ###
 

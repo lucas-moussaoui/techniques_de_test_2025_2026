@@ -11,6 +11,12 @@ Concernant mon plan de test initial, je le qualifierais de bon avec le recul. M�
 ### Ce qui était moins bien / Ce qui a manqué
 Le principal point de friction a été ce sentiment de flou au démarrage. J'ai avancé un peu à l'aveugle au début, doutant de la pertinence de mon premier plan, alors qu'il était finalement correct.
 
+Sur le plan technique, j'ai constaté une dégradation importante des performances lors de tests sur de grands volumes de données. Je me suis arrêté à un seuil de **2 000 points** pour les tests de performance afin de rester dans des temps raisonnables. Lors de mes essais à **10 000 points**, l'exécution prenait environ **2 minutes**. 
+
+Cette lenteur s'explique par deux facteurs principaux :
+1. **Complexité algorithmique** : L'implémentation actuelle de l'algorithme de Bowyer-Watson a une complexité théorique de $O(n^2)$ dans le pire des cas, ce qui entraîne une explosion du temps de calcul dès que le nombre de points devient grand.
+2. **Implémentation Python pur** : Le traitement de boucles imbriquées pour vérifier les cercles circonscrits sur des milliers de points est coûteux sans l'utilisation de bibliothèques optimisées (comme NumPy), qui n'étaient pas autorisées ici.
+
 ### Critique de la Stratégie de Test
 J'estime avoir très bien réalisé la partie purement liée aux tests. Ma suite de tests couvre l'essentiel des fonctionnalités et garantit la robustesse de l'application :
 
@@ -20,9 +26,13 @@ J'estime avoir très bien réalisé la partie purement liée aux tests. Ma suite
 
 - Tests de performance.
 
-**Pistes d'amélioration** : Avec plus de temps, j'aurais peut-être pu ajouter davantage de cas limites spécifiques pour la triangulation géométrique (configurations de points très exotiques). Cependant, j'estime avoir fait le nécessaire pour garantir un fonctionnement fiable dans le cadre demandé.
+**Pistes d'amélioration** : 
+- **Cas de tests contrôlés** : Avec plus de temps, j'aurais souhaité ajouter des cas de tests "faits main" avec des coordonnées fixes et des résultats attendus pré-calculés géométriquement. Cela permettrait de valider la topologie exacte de la triangulation, plutôt que de se reposer principalement sur des nuages de points aléatoires.
+- **Cas limites** : J'aurais également pu ajouter davantage de configurations de points très exotiques (points presque alignés ou très proches) pour pousser l'algorithme dans ses retranchements géométriques.
 
 ## Conclusion et Recul
 Avec le recul, je ne pense pas que je ferais les choses différemment. L'enchaînement des étapes s'est fait naturellement et la dynamique de travail était fluide.
 
 Ce projet m'a prouvé que même avec une vision initiale légèrement floue, le fait de suivre une méthodologie de test rigoureuse permet d'aboutir à un résultat solide et fonctionnel.
+
+
